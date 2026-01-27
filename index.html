@@ -6,266 +6,190 @@
     <title>Gestión de Invitados Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        :root { --primary: #3182ce; --edit: #2f855a; --delete: #e53e3e; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f7fafcd5; margin: 0; padding: 20px; color: #2d3748; }
+        :root { --p: #3498db; --s: #2c3e50; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
         .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .header { text-align: center; border-bottom: 2px solid #edf2f7; margin-bottom: 20px; padding-bottom: 10px; }
-        .header h1 { margin: 5px 0; color: #5ef506; text-transform: uppercase; font-size: 22px; }
-        
-        /* Resumen de totales con 5 columnas */
-        .resumen { background: #ebf8ff; padding: 15px; border-radius: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 10px; text-align: center; font-weight: bold; margin-bottom: 20px; border: 1px solid #bee3f8; }
-        .resumen div span { display: block; font-size: 1.2em; color: #2b6cb0; }
-
-        .form-group { display: flex; gap: 10px; flex-wrap: wrap; background: #edf2f7; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-        input, select, button { padding: 12px; border: 1px solid #cbd5e0; border-radius: 8px; font-size: 14px; }
-        .btn-add { background: var(--primary); color: white; flex-grow: 1; font-weight: bold; cursor: pointer; border: none; transition: 0.3s; }
-        .btn-zip { background: #805ad5; color: white; width: 100%; margin-top: 10px; border: none; cursor: pointer; font-weight: bold; }
-
-        .mesa-card { margin-top: 20px; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; animation: fadeIn 0.5s; }
-        .mesa-header { background: #4a5568; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; background: white; }
-        td { padding: 12px 20px; border-bottom: 1px solid #edf2f7; }
-        
-        /* Colores por categoría en el borde izquierdo */
-        .MAYOR { border-left: 6px solid #48bb78; }
-        .ADOLESCENTE { border-left: 6px solid #a0aec0; }
-        .MENOR { border-left: 6px solid #f6ad55; }
-        .BEBE { border-left: 6px solid #63b3ed; } 
-        
-        .id-badge { background: #edf2f7; color: #4a5568; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; border: 1px solid #cbd5e0; }
-        .obs-tag { display: block; font-size: 11px; color: var(--delete); margin-top: 4px; font-style: italic; font-weight: bold; }
-
-        /* Modales y Loader */
-        #modalQR { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); align-items:center; justify-content:center; z-index: 1000; }
-        .modal-content { background: white; padding: 20px; border-radius: 15px; text-align: center; max-width: 300px; }
-        #loader { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); align-items:center; justify-content:center; z-index: 2000; flex-direction: column; }
-        
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @media print { .no-print { display: none !important; } .container { box-shadow: none; width: 100%; margin:0; padding:0; } }
+        h1 { text-align: center; color: #2ecc71; text-transform: uppercase; margin-bottom: 5px; }
+        #status { text-align: center; font-size: 12px; margin-bottom: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 20px; background: #e8f4fd; padding: 15px; border-radius: 10px; text-align: center; }
+        .stat-box h3 { margin: 0; font-size: 12px; color: var(--s); }
+        .stat-box p { margin: 5px 0 0; font-size: 20px; font-weight: bold; color: var(--p); }
+        .form-group { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        .input-mesa { width: 80px; }
+        .input-nombre { flex-grow: 1; }
+        .input-obs { width: 100%; }
+        button { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-reg { background: var(--p); color: white; width: 100%; font-size: 16px; }
+        .btn-reg:hover { background: #2980b9; }
+        .mesa-card { background: white; border: 1px solid #e0e0e0; border-radius: 10px; margin-bottom: 20px; overflow: hidden; border-left: 5px solid var(--s); }
+        .mesa-header { background: var(--s); color: white; padding: 10px 15px; display: flex; justify-content: space-between; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; }
+        td { padding: 12px 15px; border-bottom: 1px solid #eee; }
+        .MAYOR { border-left: 4px solid #2ecc71; }
+        .BEBÉ { border-left: 4px solid #f1c40f; }
+        .id-badge { background: #eee; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; }
+        @media print { .no-print { display: none; } body { padding: 0; } .container { box-shadow: none; width: 100%; } }
     </style>
 </head>
 <body>
 
-<div id="loader">⚙️ Generando paquete de QRs...</div>
-
-<div id="modalQR" onclick="this.style.display='none'">
-    <div class="modal-content" onclick="event.stopPropagation()">
-        <h3 id="qrNombre"></h3>
-        <div id="qrContenedor"></div>
-        <p id="qrID" style="font-family: monospace; font-size: 12px;"></p>
-        <button onclick="document.getElementById('modalQR').style.display='none'" style="background: var(--delete); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%;">Cerrar</button>
-    </div>
-</div>
-
 <div class="container">
-    <div class="header">
-        <h1 id="tituloEvento">CARGANDO...</h1>
-        <p id="statusMsg" style="font-size: 11px; color: #a0aec0; margin: 0;">Conectando con la base de datos...</p>
-    </div>
+    <h1 id="eventTitle">MI EVENTO</h1>
+    <div id="status">⌛ Conectando con la base de datos...</div>
 
-    <div class="resumen">
-        <div>MESAS<br><span id="resMesas">0</span></div>
-        <div>MAY.<br><span id="resMay">0</span></div>
-        <div>ADOL.<br><span id="resAdol">0</span></div>
-        <div>MEN.<br><span id="resMen">0</span></div>
-        <div>BEBÉ<br><span id="resBebe">0</span></div>
-        <div>TOTAL<br><span id="resTotal">0</span></div>
+    <div class="stats-grid">
+        <div class="stat-box"><h3>MESAS</h3><p id="t-mesas">0</p></div>
+        <div class="stat-box"><h3>MAY.</h3><p id="t-may">0</p></div>
+        <div class="stat-box"><h3>ADOL.</h3><p id="t-ado">0</p></div>
+        <div class="stat-box"><h3>MEN.</h3><p id="t-men">0</p></div>
+        <div class="stat-box"><h3>BEBÉ</h3><p id="t-beb">0</p></div>
+        <div class="stat-box"><h3>TOTAL</h3><p id="t-total">0</p></div>
     </div>
 
     <div class="no-print">
         <div class="form-group">
-            <input type="number" id="inMesa" placeholder="Mesa" style="width: 70px;">
-            <input type="text" id="inNombre" placeholder="Nombre completo" style="flex-grow: 2;">
-            <select id="inTarj">
+            <input type="number" id="mesa" placeholder="Mesa" class="input-mesa">
+            <input type="text" id="nombre" placeholder="Nombre completo" class="input-nombre">
+            <select id="tarjeta">
                 <option value="MAYOR">MAYOR</option>
                 <option value="ADOLESCENTE">ADOLESCENTE</option>
                 <option value="MENOR">MENOR</option>
-                <option value="BEBE">BEBÉ</option>
+                <option value="BEBÉ">BEBÉ</option>
             </select>
-            <input type="text" id="inObs" placeholder="Observaciones (Celiaco, Vegano, etc.)" style="width: 100%; margin-top: 10px;">
-            <button class="btn-add" id="btnPrincipal" onclick="procesar()">REGISTRAR INVITADO</button>
         </div>
-        
-        <input type="text" id="busqueda" onkeyup="render()" placeholder="🔍 Buscar invitado por nombre..." style="width: 100%; box-sizing: border-box; margin-bottom: 20px;">
-        
-        <button class="btn-zip" onclick="descargarZIP()">📦 DESCARGAR TODOS LOS QRS (.ZIP)</button>
-        <button onclick="window.print()" style="width: 100%; margin-top: 10px; cursor: pointer; padding: 10px; background: #fff; border: 1px solid #cbd5e0; border-radius: 8px;">🖨️ IMPRIMIR LISTA</button>
+        <div class="form-group">
+            <input type="text" id="obs" placeholder="Observaciones (Celiaco, Vegano, etc.)" class="input-obs">
+            <button class="btn-reg" onclick="registrar()">REGISTRAR INVITADO</button>
+        </div>
+        <input type="text" id="busqueda" placeholder="🔍 Buscar invitado por nombre..." style="width:100%; margin-bottom:20px;" oninput="render()">
     </div>
 
     <div id="listaContainer"></div>
+
+    <div class="no-print" style="margin-top:20px; display:flex; gap:10px;">
+        <button onclick="descargarQRs()" style="background:#8e44ad; color:white; flex:1;">📦 DESCARGAR TODOS LOS QRS (.ZIP)</button>
+        <button onclick="window.print()" style="background:#fff; border:1px solid #ddd; flex:1;">🖨️ IMPRIMIR LISTA</button>
+    </div>
 </div>
 
-<script>
-    const params = new URLSearchParams(window.location.search);
-    const URL_GOOGLE = params.get('api');
-    const NOMBRE_EVENTO = params.get('n') || 'Mi Evento';
-    
-    document.getElementById('tituloEvento').innerText = NOMBRE_EVENTO.replace(/_/g, ' ');
+<div id="qrcode" style="display:none;"></div>
 
+<script>
     let invitados = [];
-    let editandoID = null;
+    const params = new URLSearchParams(window.location.search);
+    const API_URL = params.get('api');
+    const EVENTO = params.get('n') || "MI EVENTO";
+
+    document.getElementById('eventTitle').innerText = EVENTO.replace(/_/g, ' ');
 
     window.onload = async () => {
-        if (!URL_GOOGLE) {
-            document.getElementById('statusMsg').innerText = "❌ ERROR: Falta el parámetro &api= en la URL";
+        if(!API_URL) {
+            document.getElementById('status').innerHTML = "⚠️ Falta parámetro API en la URL";
             return;
         }
-        cargarDatos();
+        await cargarDatos();
     };
 
     async function cargarDatos() {
         try {
-            const res = await fetch(URL_GOOGLE);
+            const res = await fetch(API_URL);
             const data = await res.json();
-            invitados = data.map(f => ({ id: f[0], mesa: f[1], nombre: f[2], tarjeta: f[3], obs: f[4] }));
+            invitados = data.map(r => ({ id: r[0], mesa: r[1], nombre: r[2], tarjeta: r[3], obs: r[4] }));
+            document.getElementById('status').innerHTML = "✅ Sincronizado";
             render();
-            document.getElementById('statusMsg').innerText = "✅ Sincronizado";
         } catch (e) {
-            document.getElementById('statusMsg').innerText = "❌ Error de conexión con Google Sheets";
+            document.getElementById('status').innerHTML = "❌ Error de conexión con Google Sheets";
         }
     }
 
-    function procesar() {
-        const iMesa = document.getElementById('inMesa');
-        const iNom = document.getElementById('inNombre');
-        const iTarj = document.getElementById('inTarj');
-        const iObs = document.getElementById('inObs');
+    async function registrar() {
+        const mesa = document.getElementById('mesa').value;
+        const nombre = document.getElementById('nombre').value;
+        const tarjeta = document.getElementById('tarjeta').value;
+        const obs = document.getElementById('obs').value;
 
-        if(!iMesa.value || !iNom.value) return alert("Mesa y Nombre son obligatorios");
+        if(!mesa || !nombre) return alert("Completa Mesa y Nombre");
 
-        if (editandoID) {
-            // Guardar cambios en invitado existente
-            const idx = invitados.findIndex(i => i.id === editandoID);
-            invitados[idx] = { id: editandoID, mesa: iMesa.value, nombre: iNom.value, tarjeta: iTarj.value, obs: iObs.value };
-            editandoID = null;
-            document.getElementById('btnPrincipal').innerText = "REGISTRAR INVITADO";
-            document.getElementById('btnPrincipal').style.background = "#3182ce";
-        } else {
-            // Crear nuevo invitado con ID automático
-            const idGen = "ID-" + Math.random().toString(36).substr(2, 5).toUpperCase();
-            invitados.push({ id: idGen, mesa: iMesa.value, nombre: iNom.value, tarjeta: iTarj.value, obs: iObs.value });
-        }
-
-        // Limpiar formulario
-        iNom.value = ""; iMesa.value = ""; iObs.value = "";
-        iMesa.focus();
+        const nuevo = { id: Date.now().toString(), mesa, nombre, tarjeta, obs };
+        invitados.push(nuevo);
+        render();
+        await guardar();
         
-        render(); // Actualiza la vista inmediatamente
-        sincronizar(); // Envía al Excel
+        document.getElementById('nombre').value = "";
+        document.getElementById('obs').value = "";
     }
 
-    function prepararEdicion(id) {
-        const inv = invitados.find(i => i.id === id);
-        document.getElementById('inMesa').value = inv.mesa;
-        document.getElementById('inNombre').value = inv.nombre;
-        document.getElementById('inTarj').value = inv.tarjeta;
-        document.getElementById('inObs').value = inv.obs;
-        
-        editandoID = id;
-        const btn = document.getElementById('btnPrincipal');
-        btn.innerText = "💾 GUARDAR CAMBIOS";
-        btn.style.background = "#2f855a";
-        window.scrollTo({top: 0, behavior: 'smooth'});
+    async function guardar() {
+        document.getElementById('status').innerHTML = "💾 Guardando...";
+        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ data: invitados }) });
+        document.getElementById('status').innerHTML = "✅ Cambios guardados";
     }
 
-    async function sincronizar() {
-        document.getElementById('statusMsg').innerText = "⏳ Guardando en la nube...";
-        try {
-            await fetch(URL_GOOGLE, { 
-                method: 'POST', 
-                mode: 'no-cors', 
-                body: JSON.stringify({ data: invitados }) 
-            });
-            document.getElementById('statusMsg').innerText = "✅ Cambios guardados";
-        } catch (e) {
-            document.getElementById('statusMsg').innerText = "❌ Error al guardar";
-        }
-    }
-
-function render() {
-    const cont = document.getElementById('listaContainer');
-    const bus = document.getElementById('busqueda').value.toLowerCase();
-    cont.innerHTML = "";
-
-    // 1. ORDENAR EL ARRAY: Esto junta a todos los de la misma mesa en la memoria
-    invitados.sort((a, b) => {
-        return parseInt(a.mesa) - parseInt(b.mesa);
-    });
-
-    // 2. FILTRAR: Por si estás usando el buscador
-    const filt = invitados.filter(i => i.nombre.toLowerCase().includes(bus));
-    
-    // 3. OBTENER MESAS ÚNICAS: Ahora sí saldrán una sola vez
-    const mesasUnicas = [...new Set(filt.map(i => i.mesa))].sort((a,b) => a - b);
-
-    mesasUnicas.forEach(m => {
-        const listaM = filt.filter(i => i.mesa === m);
-        let tabla = `<div class="mesa-card"><div class="mesa-header">MESA ${m} <span>${listaM.length} PERS.</span></div><table>`;
-        
-        listaM.forEach(inv => {
-            tabla += `
-                <tr class="${inv.tarjeta}">
-                    <td>
-                        <span class="id-badge" onclick="verQR('${inv.id}','${inv.nombre}')">QR</span>
-                        <strong style="margin-left:8px;">${inv.nombre}</strong>
-                        ${inv.obs ? `<span class="obs-tag">⚠️ ${inv.obs}</span>` : ''}
-                    </td>
-                    <td style="font-size:11px;">${inv.tarjeta}</td>
-                    <td class="no-print" style="text-align:right; white-space:nowrap;">
-                        <button onclick="prepararEdicion('${inv.id}')" title="Editar" style="background:none; border:none; cursor:pointer; font-size:16px;">✏️</button>
-                        <button onclick="borrar('${inv.id}')" title="Eliminar" style="background:none; border:none; cursor:pointer; font-size:16px; margin-left:10px;">🗑️</button>
-                    </td>
-                </tr>`;
-        });
-        cont.innerHTML += tabla + `</table></div>`;
-    });
-    actualizarTotales();
-}
     function borrar(id) {
-        if(confirm("¿Seguro que quieres eliminar este invitado?")) {
+        if(confirm("¿Eliminar invitado?")) {
             invitados = invitados.filter(i => i.id !== id);
             render();
-            sincronizar();
+            guardar();
         }
+    }
+
+    function render() {
+        const cont = document.getElementById('listaContainer');
+        const bus = document.getElementById('busqueda').value.toLowerCase();
+        cont.innerHTML = "";
+
+        // ORDENAR POR MESA (Esto evita que salgan separadas)
+        invitados.sort((a, b) => parseInt(a.mesa) - parseInt(b.mesa));
+
+        const filt = invitados.filter(i => i.nombre.toLowerCase().includes(bus));
+        const mesasUnicas = [...new Set(filt.map(i => i.mesa))].sort((a,b) => a-b);
+
+        mesasUnicas.forEach(m => {
+            const listaM = filt.filter(i => i.mesa === m);
+            let tabla = `<div class="mesa-card"><div class="mesa-header">MESA ${m} <span>${listaM.length} PERS.</span></div><table>`;
+            listaM.forEach(inv => {
+                tabla += `
+                <tr class="${inv.tarjeta}">
+                    <td><span class="id-badge">ID:${inv.id}</span> <strong>${inv.nombre}</strong> ${inv.obs ? `<br><small>⚠️ ${inv.obs}</small>` : ''}</td>
+                    <td style="font-size:11px;">${inv.tarjeta}</td>
+                    <td class="no-print" style="text-align:right;"><button onclick="borrar('${inv.id}')">🗑️</button></td>
+                </tr>`;
+            });
+            cont.innerHTML += tabla + `</table></div>`;
+        });
+        actualizarTotales();
     }
 
     function actualizarTotales() {
-        document.getElementById('resMesas').innerText = [...new Set(invitados.map(i => i.mesa))].length;
-        document.getElementById('resMay').innerText = invitados.filter(i => i.tarjeta === 'MAYOR').length;
-        document.getElementById('resAdol').innerText = invitados.filter(i => i.tarjeta === 'ADOLESCENTE').length;
-        document.getElementById('resMen').innerText = invitados.filter(i => i.tarjeta === 'MENOR').length;
-        document.getElementById('resBebe').innerText = invitados.filter(i => i.tarjeta === 'BEBE').length;
-        document.getElementById('resTotal').innerText = invitados.length;
+        document.getElementById('t-mesas').innerText = [...new Set(invitados.map(i => i.mesa))].length;
+        document.getElementById('t-may').innerText = invitados.filter(i => i.tarjeta === 'MAYOR').length;
+        document.getElementById('t-ado').innerText = invitados.filter(i => i.tarjeta === 'ADOLESCENTE').length;
+        document.getElementById('t-men').innerText = invitados.filter(i => i.tarjeta === 'MENOR').length;
+        document.getElementById('t-beb').innerText = invitados.filter(i => i.tarjeta === 'BEBÉ').length;
+        document.getElementById('t-total').innerText = invitados.length;
     }
 
-    function verQR(id, nombre) {
-        const url = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${id}`;
-        document.getElementById('qrContenedor').innerHTML = `<img src="${url}" style="width:200px; height:200px;">`;
-        document.getElementById('qrNombre').innerText = nombre;
-        document.getElementById('qrID').innerText = "ID: " + id;
-        document.getElementById('modalQR').style.display = 'flex';
-    }
-
-    async function descargarZIP() {
-        if(invitados.length === 0) return alert("No hay invitados para procesar");
-        document.getElementById('loader').style.display = 'flex';
+    function descargarQRs() {
         const zip = new JSZip();
-        
-        for (const inv of invitados) {
-            try {
-                const res = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${inv.id}`);
-                const blob = await res.blob();
-                const nombreLimpio = inv.nombre.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-                zip.file(`Mesa${inv.mesa}_${nombreLimpio}.png`, blob);
-            } catch (e) { console.error("Error con QR de:", inv.nombre); }
-        }
-        
-        zip.generateAsync({type:"blob"}).then(c => {
-            saveAs(c, `Invitados_${NOMBRE_EVENTO}.zip`);
-            document.getElementById('loader').style.display = 'none';
+        const qrDiv = document.getElementById('qrcode');
+        alert("Generando paquete... Por favor espera.");
+
+        invitados.forEach(inv => {
+            qrDiv.innerHTML = "";
+            new QRCode(qrDiv, { text: inv.id, width: 200, height: 200 });
+            const canvas = qrDiv.querySelector('canvas');
+            const dataUrl = canvas.toDataURL("image/png").split(',')[1];
+            zip.file(`Mesa_${inv.mesa}_${inv.nombre}.png`, dataUrl, {base64: true});
+        });
+
+        zip.generateAsync({type:"blob"}).then(content => {
+            saveAs(content, `QRs_${EVENTO}.zip`);
         });
     }
 </script>
+
 </body>
 </html>
