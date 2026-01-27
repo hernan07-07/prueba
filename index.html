@@ -183,40 +183,43 @@
         }
     }
 
-    function render() {
-        const cont = document.getElementById('listaContainer');
-        const bus = document.getElementById('busqueda').value.toLowerCase();
-        cont.innerHTML = "";
+function render() {
+    const cont = document.getElementById('listaContainer');
+    const bus = document.getElementById('busqueda').value.toLowerCase();
+    cont.innerHTML = "";
 
-        // ORDENAR POR MESA ANTES DE DIBUJAR (Agrupación automática)
-        invitados.sort((a, b) => a.mesa - b.mesa);
+    // --- EL TRUCO MÁGICO ---
+    // Ordenamos la lista de invitados por número de mesa antes de dibujarlos
+    invitados.sort((a, b) => a.mesa - b.mesa);
 
-        const filt = invitados.filter(i => i.nombre.toLowerCase().includes(bus));
-        const mesasUnicas = [...new Set(filt.map(i => i.mesa))].sort((a,b) => a - b);
+    const filt = invitados.filter(i => i.nombre.toLowerCase().includes(bus));
+    
+    // Obtenemos las mesas únicas ya ordenadas numéricamente
+    const mesasUnicas = [...new Set(filt.map(i => i.mesa))].sort((a,b) => a - b);
 
-        mesasUnicas.forEach(m => {
-            const listaM = filt.filter(i => i.mesa === m);
-            let tabla = `<div class="mesa-card"><div class="mesa-header">MESA ${m} <span>${listaM.length} PERS.</span></div><table>`;
-            
-            listaM.forEach(inv => {
-                tabla += `
-                    <tr class="${inv.tarjeta}">
-                        <td>
-                            <span class="id-badge" onclick="verQR('${inv.id}','${inv.nombre}')">QR</span>
-                            <strong style="margin-left:8px;">${inv.nombre}</strong>
-                            ${inv.obs ? `<span class="obs-tag">⚠️ ${inv.obs}</span>` : ''}
-                        </td>
-                        <td style="font-size:11px;">${inv.tarjeta}</td>
-                        <td class="no-print" style="text-align:right; white-space:nowrap;">
-                            <button onclick="prepararEdicion('${inv.id}')" title="Editar" style="background:none; border:none; cursor:pointer; font-size:16px;">✏️</button>
-                            <button onclick="borrar('${inv.id}')" title="Eliminar" style="background:none; border:none; cursor:pointer; font-size:16px; margin-left:10px;">🗑️</button>
-                        </td>
-                    </tr>`;
-            });
-            cont.innerHTML += tabla + `</table></div>`;
+    mesasUnicas.forEach(m => {
+        const listaM = filt.filter(i => i.mesa === m);
+        let tabla = `<div class="mesa-card"><div class="mesa-header">MESA ${m} <span>${listaM.length} PERS.</span></div><table>`;
+        
+        listaM.forEach(inv => {
+            tabla += `
+                <tr class="${inv.tarjeta}">
+                    <td>
+                        <span class="id-badge" onclick="verQR('${inv.id}','${inv.nombre}')">QR</span>
+                        <strong style="margin-left:8px;">${inv.nombre}</strong>
+                        ${inv.obs ? `<span class="obs-tag">⚠️ ${inv.obs}</span>` : ''}
+                    </td>
+                    <td style="font-size:11px;">${inv.tarjeta}</td>
+                    <td class="no-print" style="text-align:right; white-space:nowrap;">
+                        <button onclick="prepararEdicion('${inv.id}')" title="Editar" style="background:none; border:none; cursor:pointer; font-size:16px;">✏️</button>
+                        <button onclick="borrar('${inv.id}')" title="Eliminar" style="background:none; border:none; cursor:pointer; font-size:16px; margin-left:10px;">🗑️</button>
+                    </td>
+                </tr>`;
         });
-        actualizarTotales();
-    }
+        cont.innerHTML += tabla + `</table></div>`;
+    });
+    actualizarTotales();
+}
 
     function borrar(id) {
         if(confirm("¿Seguro que quieres eliminar este invitado?")) {
