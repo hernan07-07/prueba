@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Invitados Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root { --p: #3498db; --s: #2c3e50; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #2ecc71; text-transform: uppercase; margin-bottom: 5px; }
+        #status { text-align: center; font-size: 12px; margin-bottom: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 20px; background: #e8f4fd; padding: 15px; border-radius: 10px; text-align: center; }
+        .stat-box h3 { margin: 0; font-size: 12px; color: var(--s); }
+        .stat-box p { margin: 5px 0 0; font-size: 20px; font-weight: bold; color: var(--p); }
+        .form-group { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        .input-mesa { width: 80px; }
+        .input-nombre { flex-grow: 1; }
+        .input-obs { width: 100%; }
+        button { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-reg { background: var(--p); color: white; width: 100%; font-size: 16px; }
+        .btn-reg:hover { background: #2980b9; }
+        .mesa-card { background: white; border: 1px solid #e0e0e0; border-radius: 10px; margin-bottom: 20px; overflow: hidden; border-left: 5px solid var(--s); }
+        .mesa-header { background: var(--s); color: white; padding: 10px 15px; display: flex; justify-content: space-between; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; }
+        td { padding: 12px 15px; border-bottom: 1px solid #eee; }
+        .MAYOR { border-left: 4px solid #2ecc71; }
+        .BEBÉ { border-left: 4px solid #f1c40f; }
+        .id-badge { background: #eee; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; }
+        @media print { .no-print { display: none; } body { padding: 0; } .container { box-shadow: none; width: 100%; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 id="eventTitle">MI EVENTO</h1>
+    <div id="status">⌛ Conectando con la base de datos...</div>
+
+    <div class="stats-grid">
+        <div class="stat-box"><h3>MESAS</h3><p id="t-mesas">0</p></div>
+        <div class="stat-box"><h3>MAY.</h3><p id="t-may">0</p></div>
+        <div class="stat-box"><h3>ADOL.</h3><p id="t-ado">0</p></div>
+        <div class="stat-box"><h3>MEN.</h3><p id="t-men">0</p></div>
+        <div class="stat-box"><h3>BEBÉ</h3><p id="t-beb">0</p></div>
+        <div class="stat-box"><h3>TOTAL</h3><p id="t-total">0</p></div>
+    </div>
+
+    <div class="no-print">
+        <div class="form-group">
+            <input type="number" id="mesa" placeholder="Mesa" class="input-mesa">
+            <input type="text" id="nombre" placeholder="Nombre completo" class="input-nombre">
+            <select id="tarjeta">
+                <option value="MAYOR">MAYOR</option>
+                <option value="ADOLESCENTE">ADOLESCENTE</option>
+                <option value="MENOR">MENOR</option>
+                <option value="BEBÉ">BEBÉ</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <input type="text" id="obs" placeholder="Observaciones (Celiaco, Vegano, etc.)" class="input-obs">
+            <button class="btn-reg" onclick="registrar()">REGISTRAR INVITADO</button>
+        </div>
+        <input type="text" id="busqueda" placeholder="🔍 Buscar invitado por nombre..." style="width:100%; margin-bottom:20px;" oninput="render()">
+    </div>
+
+    <div id="listaContainer"></div>
+
+    <div class="no-print" style="margin-top:20px; display:flex; gap:10px;">
+        <button onclick="descargarQRs()" style="background:#8e44ad; color:white; flex:1;">📦 DESCARGAR TODOS LOS QRS (.ZIP)</button>
+        <button onclick="window.print()" style="background:#fff; border:1px solid #ddd; flex:1;">🖨️ IMPRIMIR LISTA</button>
+    </div>
+</div>
+
+<div id="qrcode" style="display:none;"></div>
+
+<script>
+    let invitados = [];
+    const params = new URLSearchParams(window.location.search);
+    const API_URL = params.get('api');
+    const EVENTO = params.get('n') || "MI EVENTO";
+
+    document.getElementById('eventTitle').innerText = EVENTO.replace(/_/g, ' ');
+
+    window.onload = async () => {
+        if(!API_URL) {
+            document.getElementById('status').innerHTML = "⚠️ Falta parámetro API en la URL";
+            return;
+        }
+        await cargarDatos();
+    };
+
+    async function cargarDatos() {
+        try {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            invitados = data.map(r => ({ id: r[0], mesa: r[1], nombre: r[2], tarjeta: r[3], obs: r[4] }));
+            document.getElementById('status').innerHTML = "✅ Sincronizado";
+            render();
+        } catch (e) {
+            document.getElementById('status').innerHTML = "❌ Error de conexión con Google Sheets";
+        }
+    }
+
+    async function registrar() {
+        const mesa = document.getElementById('mesa').value;
+        const nombre = document.getElementById('nombre').value;
+        const tarjeta = document.getElementById('tarjeta').value;
+        const obs = document.getElementById('obs').value;
+
+        if(!mesa || !nombre) return alert("Completa Mesa y Nombre");
+
+        const nuevo = { id: Date.now().toString(), mesa, nombre, tarjeta, obs };
+        invitados.push(nuevo);
+        render();
+        await guardar();
+        
+        document.getElementById('nombre').value = "";
+        document.getElementById('obs').value = "";
+    }
+
+    async function guardar() {
+        document.getElementById('status').innerHTML = "💾 Guardando...";
+        await fetch(API_URL, { method: 'POST', body: JSON.stringify({ data: invitados }) });
+        document.getElementById('status').innerHTML = "✅ Cambios guardados";
+    }
+
+    function borrar(id) {
+        if(confirm("¿Eliminar invitado?")) {
+            invitados = invitados.filter(i => i.id !== id);
+            render();
+            guardar();
+        }
+    }
+
+    function render() {
+        const cont = document.getElementById('listaContainer');
+        const bus = document.getElementById('busqueda').value.toLowerCase();
+        cont.innerHTML = "";
+
+        // ORDENAR POR MESA (Esto evita que salgan separadas)
+        invitados.sort((a, b) => parseInt(a.mesa) - parseInt(b.mesa));
+
+        const filt = invitados.filter(i => i.nombre.toLowerCase().includes(bus));
+        const mesasUnicas = [...new Set(filt.map(i => i.mesa))].sort((a,b) => a-b);
+
+        mesasUnicas.forEach(m => {
+            const listaM = filt.filter(i => i.mesa === m);
+            let tabla = `<div class="mesa-card"><div class="mesa-header">MESA ${m} <span>${listaM.length} PERS.</span></div><table>`;
+            listaM.forEach(inv => {
+                tabla += `
+                <tr class="${inv.tarjeta}">
+                    <td><span class="id-badge">ID:${inv.id}</span> <strong>${inv.nombre}</strong> ${inv.obs ? `<br><small>⚠️ ${inv.obs}</small>` : ''}</td>
+                    <td style="font-size:11px;">${inv.tarjeta}</td>
+                    <td class="no-print" style="text-align:right;"><button onclick="borrar('${inv.id}')">🗑️</button></td>
+                </tr>`;
+            });
+            cont.innerHTML += tabla + `</table></div>`;
+        });
+        actualizarTotales();
+    }
+
+    function actualizarTotales() {
+        document.getElementById('t-mesas').innerText = [...new Set(invitados.map(i => i.mesa))].length;
+        document.getElementById('t-may').innerText = invitados.filter(i => i.tarjeta === 'MAYOR').length;
+        document.getElementById('t-ado').innerText = invitados.filter(i => i.tarjeta === 'ADOLESCENTE').length;
+        document.getElementById('t-men').innerText = invitados.filter(i => i.tarjeta === 'MENOR').length;
+        document.getElementById('t-beb').innerText = invitados.filter(i => i.tarjeta === 'BEBÉ').length;
+        document.getElementById('t-total').innerText = invitados.length;
+    }
+
+    function descargarQRs() {
+        const zip = new JSZip();
+        const qrDiv = document.getElementById('qrcode');
+        alert("Generando paquete... Por favor espera.");
+
+        invitados.forEach(inv => {
+            qrDiv.innerHTML = "";
+            new QRCode(qrDiv, { text: inv.id, width: 200, height: 200 });
+            const canvas = qrDiv.querySelector('canvas');
+            const dataUrl = canvas.toDataURL("image/png").split(',')[1];
+            zip.file(`Mesa_${inv.mesa}_${inv.nombre}.png`, dataUrl, {base64: true});
+        });
+
+        zip.generateAsync({type:"blob"}).then(content => {
+            saveAs(content, `QRs_${EVENTO}.zip`);
+        });
+    }
+</script>
+
+</body>
+</html>
