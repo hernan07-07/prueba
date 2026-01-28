@@ -10,60 +10,33 @@
     <style>
         :root { --p: #3498db; --s: #2c3e50; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
-        
-        /* Contenedor Principal */
         .container { max-width: 900px; margin: auto; background: white; padding: 0 0 30px 0; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; }
-        
-        /* Encabezado Negro Angosto */
-        .header-logo {
-            background: #333;
-            padding: 15px 0;
-            text-align: center;
-            width: 100%;
-            margin-bottom: 20px;
-        }
-        .header-logo img {
-            max-height: 50px; /* Logo angosto */
-            width: auto;
-            display: block;
-            margin: auto;
-        }
-
+        .header-logo { background: #333; padding: 15px 0; text-align: center; width: 100%; margin-bottom: 20px; }
+        .header-logo img { max-height: 50px; width: auto; display: block; margin: auto; }
         .content-padding { padding: 0 30px; }
-
         h1 { text-align: center; color: #2ecc71; text-transform: uppercase; margin-bottom: 5px; font-size: 24px; }
         #status { text-align: center; font-size: 12px; margin-bottom: 20px; }
-        
-        /* Estadísticas */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; margin-bottom: 20px; background: #e8f4fd; padding: 15px; border-radius: 10px; text-align: center; }
         .stat-box h3 { margin: 0; font-size: 11px; color: var(--s); }
         .stat-box p { margin: 5px 0 0; font-size: 18px; font-weight: bold; color: var(--p); }
-        
-        /* Formulario */
         .form-group { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
         input, select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
         .input-mesa { width: 80px; }
         .input-nombre { flex-grow: 1; }
         .input-obs { width: 100%; }
-        
         button { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .btn-reg { background: var(--p); color: white; width: 100%; font-size: 16px; margin-top: 5px; }
-        .btn-reg:hover { background: #2980b9; }
-
-        /* Mesas y Lista */
+        .btn-edit { background: #f39c12; color: white; width: 100%; font-size: 16px; margin-top: 5px; display: none; }
         .mesa-card { background: white; border: 1px solid #e0e0e0; border-radius: 10px; margin-bottom: 20px; overflow: hidden; border-left: 5px solid var(--s); }
         .mesa-header { background: var(--s); color: white; padding: 10px 15px; display: flex; justify-content: space-between; font-weight: bold; }
         table { width: 100%; border-collapse: collapse; }
         td { padding: 12px 15px; border-bottom: 1px solid #eee; }
-        
-        /* Categorías */
         .MAYOR { border-left: 4px solid #2ecc71; }
         .ADOLESCENTE { border-left: 4px solid #3498db; }
         .MENOR { border-left: 4px solid #e67e22; }
         .BEBÉ { border-left: 4px solid #f1c40f; }
-
-        .id-badge { background: #eee; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: #666; }
-
+        .id-badge { background: #eee; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: #666; cursor: pointer; }
+        .btn-accion { background: none; border: 1px solid #ddd; padding: 5px 10px; font-size: 12px; margin-left: 5px; border-radius: 5px; }
         @media print { .no-print { display: none; } body { padding: 0; } .container { box-shadow: none; width: 100%; border-radius: 0; } }
     </style>
 </head>
@@ -76,8 +49,8 @@
     </div>
 
     <div class="content-padding">
-        <h1 id="eventTitle">MI EVENTO</h1>
-        <div id="status">⌛ Conectando con la base de datos...</div>
+        <h1 id="eventTitle">CATERING GESTIÓN</h1>
+        <div id="status">⌛ Conectando...</div>
 
         <div class="stats-grid">
             <div class="stat-box"><h3>MESAS</h3><p id="t-mesas">0</p></div>
@@ -89,6 +62,7 @@
         </div>
 
         <div class="no-print">
+            <input type="hidden" id="edit-id">
             <div class="form-group">
                 <input type="number" id="mesa" placeholder="Mesa" class="input-mesa">
                 <input type="text" id="nombre" placeholder="Nombre completo" class="input-nombre">
@@ -100,8 +74,9 @@
                 </select>
             </div>
             <div class="form-group">
-                <input type="text" id="obs" placeholder="Observaciones (Celiaco, Vegano, etc.)" class="input-obs">
-                <button class="btn-reg" onclick="registrar()">REGISTRAR INVITADO</button>
+                <input type="text" id="obs" placeholder="Observaciones" class="input-obs">
+                <button id="btn-registrar" class="btn-reg" onclick="registrar()">REGISTRAR INVITADO</button>
+                <button id="btn-guardar-edit" class="btn-edit" onclick="finalizarEdicion()">GUARDAR CAMBIOS</button>
             </div>
             <input type="text" id="busqueda" placeholder="🔍 Buscar invitado..." style="width:100%; margin: 15px 0;" oninput="render()">
         </div>
@@ -109,7 +84,7 @@
         <div id="listaContainer"></div>
 
         <div class="no-print" style="margin-top:20px; display:flex; gap:10px;">
-            <button onclick="descargarQRs()" style="background:#8e44ad; color:white; flex:1;">📦 DESCARGAR QRS</button>
+            <button onclick="descargarQRs()" style="background:#8e44ad; color:white; flex:1;">📦 QRS</button>
             <button onclick="window.print()" style="background:#fff; border:1px solid #ddd; flex:1;">🖨️ IMPRIMIR</button>
         </div>
     </div>
@@ -121,15 +96,12 @@
     let invitados = [];
     const params = new URLSearchParams(window.location.search);
     const API_URL = params.get('api');
-    const EVENTO = params.get('n') || "MI EVENTO";
+    const EVENTO = params.get('n') || "EVENTO";
 
     document.getElementById('eventTitle').innerText = EVENTO.replace(/_/g, ' ');
 
     window.onload = async () => {
-        if(!API_URL) {
-            document.getElementById('status').innerHTML = "⚠️ Falta parámetro API";
-            return;
-        }
+        if(!API_URL) return document.getElementById('status').innerHTML = "⚠️ Falta API";
         await cargarDatos();
     };
 
@@ -137,27 +109,62 @@
         try {
             const res = await fetch(API_URL);
             const data = await res.json();
-            invitados = data.map(r => ({ id: r[0], mesa: r[1], nombre: r[2], tarjeta: r[3], obs: r[4] }));
+            invitados = data.map(r => ({ id: r[0].toString(), mesa: r[1], nombre: r[2], tarjeta: r[3], obs: r[4] }));
             document.getElementById('status').innerHTML = "✅ Sincronizado";
             render();
-        } catch (e) {
-            document.getElementById('status').innerHTML = "❌ Error de conexión con Google Sheets";
-        }
+        } catch (e) { document.getElementById('status').innerHTML = "❌ Error conexión"; }
     }
 
     async function registrar() {
         const mesa = document.getElementById('mesa').value;
         const nombre = document.getElementById('nombre').value;
-        const tarjeta = document.getElementById('tarjeta').value;
-        const obs = document.getElementById('obs').value;
-        if(!mesa || !nombre) return alert("Mesa y Nombre obligatorios");
-
-        const nuevo = { id: Date.now().toString().slice(-6), mesa, nombre, tarjeta, obs };
-        invitados.push(nuevo);
+        if(!mesa || !nombre) return alert("Faltan datos");
+        
+        invitados.push({ id: Date.now().toString().slice(-6), mesa, nombre, tarjeta: document.getElementById('tarjeta').value, obs: document.getElementById('obs').value });
+        limpiarForm();
         render();
         await guardar();
+    }
+
+    function editar(id) {
+        const inv = invitados.find(i => i.id === id);
+        if(!inv) return;
+        
+        document.getElementById('edit-id').value = id;
+        document.getElementById('mesa').value = inv.mesa;
+        document.getElementById('nombre').value = inv.nombre;
+        document.getElementById('tarjeta').value = inv.tarjeta;
+        document.getElementById('obs').value = inv.obs;
+        
+        document.getElementById('btn-registrar').style.display = 'none';
+        document.getElementById('btn-guardar-edit').style.display = 'block';
+        window.scrollTo(0,0);
+    }
+
+    async function finalizarEdicion() {
+        const id = document.getElementById('edit-id').value;
+        const index = invitados.findIndex(i => i.id === id);
+        
+        invitados[index] = {
+            id: id,
+            mesa: document.getElementById('mesa').value,
+            nombre: document.getElementById('nombre').value,
+            tarjeta: document.getElementById('tarjeta').value,
+            obs: document.getElementById('obs').value
+        };
+        
+        limpiarForm();
+        render();
+        await guardar();
+        document.getElementById('btn-registrar').style.display = 'block';
+        document.getElementById('btn-guardar-edit').style.display = 'none';
+    }
+
+    function limpiarForm() {
+        document.getElementById('mesa').value = "";
         document.getElementById('nombre').value = "";
         document.getElementById('obs').value = "";
+        document.getElementById('edit-id').value = "";
     }
 
     async function guardar() {
@@ -178,20 +185,22 @@
         const cont = document.getElementById('listaContainer');
         const bus = document.getElementById('busqueda').value.toLowerCase();
         cont.innerHTML = "";
-
         invitados.sort((a, b) => parseInt(a.mesa) - parseInt(b.mesa));
         const filt = invitados.filter(i => i.nombre.toLowerCase().includes(bus));
         const mesasUnicas = [...new Set(filt.map(i => i.mesa))].sort((a,b) => a-b);
 
         mesasUnicas.forEach(m => {
             const listaM = filt.filter(i => i.mesa === m);
-            let tabla = `<div class="mesa-card"><div class="mesa-header">MESA ${m} <span>${listaM.length} PERS.</span></div><table>`;
+            let tabla = `<div class="mesa-card"><div class="mesa-header">MESA ${m}</div><table>`;
             listaM.forEach(inv => {
                 tabla += `
                 <tr class="${inv.tarjeta}">
-                    <td><span class="id-badge">#${inv.id}</span> <strong>${inv.nombre}</strong> ${inv.obs ? `<br><small style="color:red;">${inv.obs}</small>` : ''}</td>
-                    <td style="font-size:10px; color:#666;">${inv.tarjeta}</td>
-                    <td class="no-print" style="text-align:right;"><button onclick="borrar('${inv.id}')" style="background:none; color:red; padding:5px;">✕</button></td>
+                    <td onclick="editar('${inv.id}')" style="cursor:pointer;"><strong>${inv.nombre}</strong><br><small>${inv.obs || ''}</small></td>
+                    <td style="font-size:10px;">${inv.tarjeta}</td>
+                    <td class="no-print" style="text-align:right;">
+                        <button class="btn-accion" onclick="editar('${inv.id}')">✏️</button>
+                        <button class="btn-accion" onclick="borrar('${inv.id}')" style="color:red;">✕</button>
+                    </td>
                 </tr>`;
             });
             cont.innerHTML += tabla + `</table></div>`;
@@ -221,6 +230,5 @@
         zip.generateAsync({type:"blob"}).then(c => saveAs(c, `QRs_${EVENTO}.zip`));
     }
 </script>
-
 </body>
 </html>
